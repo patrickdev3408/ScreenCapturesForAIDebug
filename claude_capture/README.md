@@ -24,6 +24,7 @@ to your clipboard, and **Ctrl+V** it into your Claude chat.
 
 | Key | Action |
 |-----|--------|
+| `F8` tap | **Voice note:** grab a screenshot + start recording; tap again to stop, transcribe, and attach the text to that frame |
 | `F9` tap | Single screen capture |
 | `F9` hold | Rolling screen capture (every 0.5 s) until released |
 | `F10` tap | Single audio chunk (~5 s) → transcribe → buffer |

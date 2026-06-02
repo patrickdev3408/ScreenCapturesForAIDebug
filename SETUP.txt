@@ -19,6 +19,8 @@ HOW TO USE
 ----------
 While it's running, use these keys anywhere:
 
+   F8   tap .......... screenshot + start talking; tap F8 again to stop.
+                       What you said gets attached to that screenshot.
    F9   tap .......... take one screenshot
    F9   hold ......... keep screenshotting until you let go
    F10  tap .......... record ~5s of your mic and transcribe it

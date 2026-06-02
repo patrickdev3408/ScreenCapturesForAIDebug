@@ -62,6 +62,12 @@ _ring = None
 _ring_lock = threading.Lock()
 _executor = ThreadPoolExecutor(max_workers=1)
 
+# Arbitrary-length recording (F8 voice note): while active, every mic chunk is
+# accumulated here in addition to the ring buffer, so a recording can be any length.
+_recording = False
+_record_chunks = []
+_record_lock = threading.Lock()
+
 # Lazily-loaded Whisper model (loading "base" can take a few seconds).
 _model = None
 _model_lock = threading.Lock()
@@ -89,8 +95,12 @@ def start():
             # Overflows etc. are non-fatal; just note them.
             pass
         # indata is int16 (channels last); store raw bytes.
+        chunk = bytes(indata)
         with _ring_lock:
-            _ring.append(bytes(indata))
+            _ring.append(chunk)
+        if _recording:
+            with _record_lock:
+                _record_chunks.append(chunk)
 
     try:
         _stream = sd.RawInputStream(
@@ -124,6 +134,36 @@ def get_audio_chunk(seconds=None):
     with _ring_lock:
         recent = list(_ring)[-chunks_needed:]
     return b"".join(recent)
+
+
+def is_recording():
+    return _recording
+
+
+def start_recording():
+    """Begin accumulating mic audio for an arbitrary-length voice note."""
+    global _recording
+    if not _available:
+        return False
+    with _record_lock:
+        _record_chunks.clear()
+        _recording = True
+    return True
+
+
+def stop_recording():
+    """Stop accumulating and return the full recording as raw int16 bytes."""
+    global _recording
+    with _record_lock:
+        _recording = False
+        data = b"".join(_record_chunks)
+        _record_chunks.clear()
+    return data
+
+
+def recording_seconds(data):
+    """Helper: duration in seconds of a raw int16 mono byte string."""
+    return len(data) / (config.AUDIO_SAMPLE_RATE * 2)
 
 
 def _get_model():

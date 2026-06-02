@@ -1,6 +1,8 @@
 """Hotkey listener + orchestration for the Claude screen/audio capture tool.
 
 Hotkeys (see README / spec):
+  F8  tap        toggle a voice note: grab one screenshot + start recording;
+                 tap again to stop, transcribe, and attach the text to that frame
   F9  tap        single screen capture
   F9  hold       rolling screen capture (every ROLLING_SCREEN_INTERVAL s)
   F10 tap        single audio chunk -> transcribe -> add to buffer
@@ -11,7 +13,7 @@ Hotkeys (see README / spec):
   Shift+F12      toggle export mode (grid <-> pdf)
   Ctrl+F12       clear buffer without sending
 
-F9-F12 are intercepted at the OS hook level and SUPPRESSED, so they drive this
+F8-F12 are intercepted at the OS hook level and SUPPRESSED, so they drive this
 tool only and never leak to the focused app (F11 = fullscreen, F12 = dev tools,
 etc.). Modifier keys are watched but never suppressed, so typing is unaffected.
 """
@@ -32,7 +34,7 @@ import clipboard_util
 export_mode = config.EXPORT_MODE
 
 # --- Low-level key identity (Windows virtual-key codes) ---
-_VK = {0x78: "f9", 0x79: "f10", 0x7A: "f11", 0x7B: "f12"}
+_VK = {0x77: "f8", 0x78: "f9", 0x79: "f10", 0x7A: "f11", 0x7B: "f12"}
 
 # WM_KEYDOWN / WM_SYSKEYDOWN (the SYS* variants fire while Alt is held, e.g. Alt+F12)
 # and their key-up counterparts.
@@ -52,9 +54,10 @@ _phys_down = set()       # our f-key vkCodes currently physically down (dedupes 
 _held = set()
 _hold_timers = {}        # name -> threading.Timer pending hold activation
 _hold_active = {}        # name -> bool, True once rolling started for that key
-_simple_held = set()     # "f10" / "f12" guard so a press fires once
+_simple_held = set()     # "f8" / "f10" / "f12" guard so a press fires once
 
 _listener = None         # set in main(); the filter calls _listener.suppress_event()
+_voice_entry = None      # buffer entry the current F8 voice note will attach to
 
 
 # --------------------------------------------------------------------------
@@ -114,6 +117,41 @@ def single_screen_audio():
                 status(f'Transcript attached: "{text[:80]}"')
 
         audio.transcribe_async(chunk, _done)
+
+
+def toggle_voice_note():
+    """F8: first tap grabs a screenshot AND starts recording; second tap stops,
+    transcribes the whole recording, and attaches the text to that screenshot."""
+    global _voice_entry
+    if not audio.is_available():
+        status("Voice note needs a microphone — audio is unavailable.")
+        return
+
+    if not audio.is_recording():
+        # START: capture the frame now, then record until the next F8.
+        frame = capture.capture_screen()
+        _, count, entry = state.add_entry(
+            frame, transcript="(recording voice note...)", dedup=False
+        )
+        _voice_entry = entry
+        audio.start_recording()
+        status(f"[REC] Screenshot taken + recording voice note... tap F8 to stop. Buffer: {count} items.")
+    else:
+        # STOP: end recording, transcribe, attach to the frame grabbed at start.
+        data = audio.stop_recording()
+        entry = _voice_entry
+        _voice_entry = None
+        secs = audio.recording_seconds(data)
+        status(f"Voice note captured ({secs:.1f}s), transcribing...")
+
+        def _done(text):
+            state.set_transcript(entry, text or "(no speech detected)")
+            if text:
+                status(f'Voice note attached: "{text[:80]}"')
+            else:
+                status("Voice note: (no speech detected)")
+
+        audio.transcribe_async(data, _done)
 
 
 def _rolling_screen_audio_capture(frame):
@@ -238,6 +276,11 @@ _event_q = queue.Queue()
 def _key_down(name):
     if name in ("f9", "f11"):
         _taphold_down(name)
+    elif name == "f8":
+        if "f8" in _simple_held:
+            return
+        _simple_held.add("f8")
+        toggle_voice_note()
     elif name == "f10":
         if "f10" in _simple_held:
             return
@@ -310,6 +353,7 @@ def _print_banner():
     print(f" Audio       : {'ready' if audio.is_available() else 'UNAVAILABLE'}")
     print(f" API key     : {'set' if (config.ANTHROPIC_API_KEY) else 'NOT SET'}")
     print("-" * 60)
+    print(" F8  tap        voice note: screenshot + record; tap again to stop & attach")
     print(" F9  tap/hold   single / rolling screen")
     print(" F10 tap        audio chunk -> transcribe")
     print(" F11 tap/hold   single / rolling screen + audio")
