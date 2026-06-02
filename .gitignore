@@ -1,0 +1,24 @@
+# Python virtual environment (machine-specific, large)
+claude_capture/.venv/
+.venv/
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local secrets / env
+.env
+*.local
+
+# Claude Code local session config
+.claude/
+
+# OS cruft
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Exported captures (temp output)
+*.tmp

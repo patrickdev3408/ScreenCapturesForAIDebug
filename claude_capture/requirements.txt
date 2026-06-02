@@ -1,0 +1,8 @@
+mss
+Pillow
+sounddevice
+faster-whisper
+pynput
+anthropic
+fpdf2
+numpy
