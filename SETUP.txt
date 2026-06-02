@@ -1,0 +1,40 @@
+==============================================
+ Claude Screen + Audio Capture — Quick Setup
+==============================================
+
+1. Install Python (only if you don't already have it):
+   https://www.python.org/downloads/
+   IMPORTANT: tick "Add python.exe to PATH" during install.
+
+2. Double-click  "Start Capture.bat"
+
+   - The FIRST time, it sets itself up automatically
+     (downloads a few hundred MB, takes a few minutes — just wait).
+   - Every time after that, it starts instantly.
+
+That's it. No API key needed.
+
+
+HOW TO USE
+----------
+While it's running, use these keys anywhere:
+
+   F9   tap .......... take one screenshot
+   F9   hold ......... keep screenshotting until you let go
+   F10  tap .......... record ~5s of your mic and transcribe it
+   F11  tap .......... screenshot + mic together
+   F11  hold ......... screenshot + mic every few seconds until you let go
+   F12 ............... copy everything to the clipboard
+   Shift+F12 ......... switch between Grid image / PDF
+   Ctrl+F12 .......... clear and start over
+
+Then just press Ctrl+V in your Claude chat to paste it in.
+
+To quit: click the black window and press Ctrl+C.
+(While running, F9-F12 are used by this tool, not other apps.)
+
+
+NEED A MIC
+----------
+The audio (F10 / F11) features need a microphone. No mic is fine —
+screenshots still work, audio just says "unavailable".
