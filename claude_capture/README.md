@@ -5,6 +5,21 @@ hotkeys, buffers them locally, and sends an annotated grid/PDF to Claude for
 feedback. Useful for quickly showing Claude what your app/game is doing without
 manually taking screenshots and typing explanations.
 
+## Quick start (Windows)
+
+1. Install **Python 3.11+** from <https://www.python.org/downloads/> — during
+   install, tick **"Add python.exe to PATH"**. (Skip if you already have it.)
+2. Download this repo: green **Code** button → **Download ZIP**, then unzip.
+   (Or `git clone https://github.com/patrickdev3408/ScreenCapturesForAIDebug.git`.)
+3. Double-click **`Start Capture.bat`**.
+
+That's it. The first launch sets everything up automatically (creates a Python
+environment and installs dependencies — a one-time few-minute wait). Every launch
+after that starts instantly. Capture with the hotkeys below, press **F12** to copy
+to your clipboard, and **Ctrl+V** it into your Claude chat.
+
+> You do **not** need an API key for the normal (F12 → clipboard) workflow.
+
 ## Hotkeys
 
 | Key | Action |
