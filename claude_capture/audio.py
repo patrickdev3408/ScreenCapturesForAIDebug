@@ -204,6 +204,10 @@ def transcribe(audio_bytes):
         return ""
     try:
         audio = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+        # Pad trailing silence: Whisper tends to clip the final word(s) when audio
+        # ends abruptly on speech, so give it a moment of silence to settle on.
+        pad = np.zeros(int(config.AUDIO_SAMPLE_RATE * config.TRANSCRIBE_SILENCE_PAD), dtype=np.float32)
+        audio = np.concatenate([audio, pad])
         model = _get_model()
         segments, _info = model.transcribe(audio, language=None, beam_size=1)
         text = " ".join(seg.text.strip() for seg in segments).strip()

@@ -20,6 +20,7 @@ etc.). Modifier keys are watched but never suppressed, so typing is unaffected.
 
 import queue
 import threading
+import time
 
 from pynput import keyboard
 
@@ -58,6 +59,7 @@ _simple_held = set()     # "f8" / "f10" / "f12" guard so a press fires once
 
 _listener = None         # set in main(); the filter calls _listener.suppress_event()
 _voice_entry = None      # buffer entry the current F8 voice note will attach to
+_voice_stopping = False  # True while an F8 stop is settling/transcribing
 
 
 # --------------------------------------------------------------------------
@@ -122,10 +124,12 @@ def single_screen_audio():
 def toggle_voice_note():
     """F8: first tap grabs a screenshot AND starts recording; second tap stops,
     transcribes the whole recording, and attaches the text to that screenshot."""
-    global _voice_entry
+    global _voice_entry, _voice_stopping
     if not audio.is_available():
         status("Voice note needs a microphone — audio is unavailable.")
         return
+    if _voice_stopping:
+        return  # a previous stop is still settling/transcribing
 
     if not audio.is_recording():
         # START: capture the frame now, then record until the next F8.
@@ -137,21 +141,30 @@ def toggle_voice_note():
         audio.start_recording()
         status(f"[REC] Screenshot taken + recording voice note... tap F8 to stop. Buffer: {count} items.")
     else:
-        # STOP: end recording, transcribe, attach to the frame grabbed at start.
-        data = audio.stop_recording()
+        # STOP: let the tail of the sentence land, then transcribe and attach to
+        # the frame grabbed at start. Done on a thread so the hotkey loop is free.
+        _voice_stopping = True
         entry = _voice_entry
         _voice_entry = None
-        secs = audio.recording_seconds(data)
-        status(f"Voice note captured ({secs:.1f}s), transcribing...")
+        status("Voice note stopping...")
 
-        def _done(text):
-            state.set_transcript(entry, text or "(no speech detected)")
-            if text:
-                status(f'Voice note attached: "{text[:80]}"')
-            else:
-                status("Voice note: (no speech detected)")
+        def _finish():
+            global _voice_stopping
+            try:
+                time.sleep(config.VOICE_NOTE_STOP_SETTLE)  # keep capturing the tail
+                data = audio.stop_recording()
+                secs = audio.recording_seconds(data)
+                status(f"Voice note captured ({secs:.1f}s), transcribing...")
+                text = audio.transcribe(data)
+                state.set_transcript(entry, text or "(no speech detected)")
+                if text:
+                    status(f'Voice note attached: "{text[:80]}"')
+                else:
+                    status("Voice note: (no speech detected)")
+            finally:
+                _voice_stopping = False
 
-        audio.transcribe_async(data, _done)
+        threading.Thread(target=_finish, daemon=True).start()
 
 
 def _rolling_screen_audio_capture(frame):

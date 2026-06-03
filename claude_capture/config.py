@@ -13,6 +13,10 @@ AUDIO_RING_SECONDS = 15           # rolling mic buffer length kept at all times
 AUDIO_SAMPLE_RATE = 16000         # 16 kHz mono is what Whisper expects
 AUDIO_CHANNELS = 1
 AUDIO_FRAMES_PER_BUFFER = 1024
+TRANSCRIBE_SILENCE_PAD = 0.5      # seconds of silence appended before transcription
+                                  # so Whisper doesn't drop the final word(s)
+VOICE_NOTE_STOP_SETTLE = 0.4      # seconds to keep capturing after you tap F8 to
+                                  # stop, so the tail of your sentence isn't clipped
 
 # --- Rolling capture intervals ---
 ROLLING_SCREEN_INTERVAL = 0.5     # seconds between frames in rolling screen mode
