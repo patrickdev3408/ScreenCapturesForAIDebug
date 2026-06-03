@@ -7,7 +7,7 @@ of the same name (the env var takes precedence if set).
 import os
 
 # --- Whisper / audio transcription ---
-WHISPER_MODEL = "base"            # base | small | medium
+WHISPER_MODEL = "small"           # base | small | medium
 AUDIO_CHUNK_SECONDS = 5           # how many seconds of audio to pull per capture
 AUDIO_RING_SECONDS = 15           # rolling mic buffer length kept at all times
 AUDIO_SAMPLE_RATE = 16000         # 16 kHz mono is what Whisper expects
